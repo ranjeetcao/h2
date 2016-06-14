@@ -1,0 +1,49 @@
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.JsonProcessingException;
+import org.codehaus.jackson.JsonToken;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.json.JSONArray;
+
+public class JSONObjectReader extends Reader {
+  private JsonParser jsonParser;
+
+  public JSONObjectReader(InputStream instream) throws JsonParseException, IOException {
+    jsonParser = new ObjectMapper().getJsonFactory().createJsonParser(instream);
+    jsonParser.nextToken(); // to avoid first token [ in array
+  }
+
+  public JSONArray readJsonNode(int count)
+      throws JsonParseException, JsonProcessingException, IOException {
+    if (count <= 0) {
+      throw new IllegalArgumentException("object count should greater than 0");
+    }
+
+    JsonToken token;
+    JSONArray array = new JSONArray();
+    while ((token = jsonParser.nextToken()) != null) {
+      if (token.equals(JsonToken.START_ARRAY)) {
+        array.put(jsonParser.readValueAsTree());
+      }
+
+      if (array.length() >= count) {
+        break;
+      }
+    }
+    return array.length() > 0 ? array : null;
+  }
+
+  @Override
+  public int read(char[] cbuf, int off, int len) throws IOException {
+    return 0;
+  }
+
+  @Override
+  public void close() throws IOException {
+    jsonParser.close();
+  }
+}
